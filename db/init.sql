@@ -27,3 +27,21 @@ CREATE TABLE IF NOT EXISTS system_status (
 INSERT INTO system_status (id,status,safe_mode)
 VALUES (TRUE,'FAIR',FALSE)
 ON CONFLICT (id) DO NOTHING;
+
+
+CREATE TABLE IF NOT EXISTS counterfactual_logs (
+    id SERIAL PRIMARY KEY,
+    timestamp TIMESTAMPTZ DEFAULT NOW(),
+    request_id VARCHAR(64),
+
+    -- original input
+    original_sex VARCHAR(20),
+    counterfactual_sex VARCHAR(20),
+
+    -- predictions
+    original_prediction INT,
+    counterfactual_prediction INT,
+
+    -- changed?
+    changed BOOLEAN
+);
