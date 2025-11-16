@@ -45,3 +45,15 @@ CREATE TABLE IF NOT EXISTS counterfactual_logs (
     -- changed?
     changed BOOLEAN
 );
+
+
+CREATE TABLE IF NOT EXISTS decision_logs (
+    id SERIAL PRIMARY KEY,
+    timestamp TIMESTAMPTZ DEFAULT NOW(),
+    request_id VARCHAR(64),
+    model_version VARCHAR(20),
+    features JSONB,
+    prediction INT,
+    shap_values JSONB,
+    top_features JSONB
+);
