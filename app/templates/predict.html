@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}Predict - Fairness Monitoring{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Make a Prediction</h2>
+    <form id="predictForm" class="feature-form">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="age">Age</label>
+                <div class="field-description">The person's age in years</div>
+                <input type="number" id="age" name="age" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="workclass">Workclass</label>
+                <div class="field-description">Type of employment sector or work classification</div>
+                <select id="workclass" name="workclass" required>
+                    <option value="">Select...</option>
+                    <option value="Private">Private</option>
+                    <option value="Self-emp-not-inc">Self-emp-not-inc</option>
+                    <option value="Self-emp-inc">Self-emp-inc</option>
+                    <option value="Federal-gov">Federal-gov</option>
+                    <option value="Local-gov">Local-gov</option>
+                    <option value="State-gov">State-gov</option>
+                    <option value="Without-pay">Without-pay</option>
+                    <option value="Never-worked">Never-worked</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="fnlwgt">Final Weight</label>
+                <div class="field-description">Statistical weight assigned by the Census Bureau</div>
+                <input type="number" id="fnlwgt" name="fnlwgt" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="education">Education</label>
+                <div class="field-description">Highest level of education completed</div>
+                <select id="education" name="education" required>
+                    <option value="">Select...</option>
+                    <option value="Bachelors">Bachelors</option>
+                    <option value="Some-college">Some-college</option>
+                    <option value="11th">11th</option>
+                    <option value="HS-grad">HS-grad</option>
+                    <option value="Prof-school">Prof-school</option>
+                    <option value="Assoc-acdm">Assoc-acdm</option>
+                    <option value="Assoc-voc">Assoc-voc</option>
+                    <option value="9th">9th</option>
+                    <option value="7th-8th">7th-8th</option>
+                    <option value="12th">12th</option>
+                    <option value="Masters">Masters</option>
+                    <option value="1st-4th">1st-4th</option>
+                    <option value="10th">10th</option>
+                    <option value="Doctorate">Doctorate</option>
+                    <option value="5th-6th">5th-6th</option>
+                    <option value="Preschool">Preschool</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="education-num">Education Number</label>
+                <div class="field-description">Numeric representation of education level (1-16)</div>
+                <input type="number" id="education-num" name="education-num" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="marital-status">Marital Status</label>
+                <div class="field-description">Current marital status of the person</div>
+                <select id="marital-status" name="marital-status" required>
+                    <option value="">Select...</option>
+                    <option value="Married-civ-spouse">Married-civ-spouse</option>
+                    <option value="Divorced">Divorced</option>
+                    <option value="Never-married">Never-married</option>
+                    <option value="Separated">Separated</option>
+                    <option value="Widowed">Widowed</option>
+                    <option value="Married-spouse-absent">Married-spouse-absent</option>
+                    <option value="Married-AF-spouse">Married-AF-spouse</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="occupation">Occupation</label>
+                <div class="field-description">Type of job or profession</div>
+                <select id="occupation" name="occupation" required>
+                    <option value="">Select...</option>
+                    <option value="Tech-support">Tech-support</option>
+                    <option value="Craft-repair">Craft-repair</option>
+                    <option value="Other-service">Other-service</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Exec-managerial">Exec-managerial</option>
+                    <option value="Prof-specialty">Prof-specialty</option>
+                    <option value="Handlers-cleaners">Handlers-cleaners</option>
+                    <option value="Machine-op-inspct">Machine-op-inspct</option>
+                    <option value="Adm-clerical">Adm-clerical</option>
+                    <option value="Farming-fishing">Farming-fishing</option>
+                    <option value="Transport-moving">Transport-moving</option>
+                    <option value="Priv-house-serv">Priv-house-serv</option>
+                    <option value="Protective-serv">Protective-serv</option>
+                    <option value="Armed-Forces">Armed-Forces</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="relationship">Relationship</label>
+                <div class="field-description">Relationship status within the household</div>
+                <select id="relationship" name="relationship" required>
+                    <option value="">Select...</option>
+                    <option value="Wife">Wife</option>
+                    <option value="Own-child">Own-child</option>
+                    <option value="Husband">Husband</option>
+                    <option value="Not-in-family">Not-in-family</option>
+                    <option value="Other-relative">Other-relative</option>
+                    <option value="Unmarried">Unmarried</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="race">Race</label>
+                <div class="field-description">Self-reported race or ethnicity</div>
+                <select id="race" name="race" required>
+                    <option value="">Select...</option>
+                    <option value="White">White</option>
+                    <option value="Asian-Pac-Islander">Asian-Pac-Islander</option>
+                    <option value="Amer-Indian-Eskimo">Amer-Indian-Eskimo</option>
+                    <option value="Other">Other</option>
+                    <option value="Black">Black</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="sex">Sex</label>
+                <div class="field-description">Biological sex (Male or Female)</div>
+                <select id="sex" name="sex" required>
+                    <option value="">Select...</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="capital-gain">Capital Gain</label>
+                <div class="field-description">Income from capital gains in dollars</div>
+                <input type="number" id="capital-gain" name="capital-gain" value="0" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="capital-loss">Capital Loss</label>
+                <div class="field-description">Losses from capital investments in dollars</div>
+                <input type="number" id="capital-loss" name="capital-loss" value="0" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="hours-per-week">Hours per Week</label>
+                <div class="field-description">Number of hours worked per week</div>
+                <input type="number" id="hours-per-week" name="hours-per-week" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="native-country">Native Country</label>
+                <div class="field-description">Country of origin or birth</div>
+                <select id="native-country" name="native-country" required>
+                    <option value="">Select...</option>
+                    <option value="United-States">United-States</option>
+                    <option value="Cambodia">Cambodia</option>
+                    <option value="England">England</option>
+                    <option value="Puerto-Rico">Puerto-Rico</option>
+                    <option value="Canada">Canada</option>
+                    <option value="Germany">Germany</option>
+                    <option value="Outlying-US(Guam-USVI-etc)">Outlying-US(Guam-USVI-etc)</option>
+                    <option value="India">India</option>
+                    <option value="Japan">Japan</option>
+                    <option value="Greece">Greece</option>
+                    <option value="South">South</option>
+                    <option value="China">China</option>
+                    <option value="Cuba">Cuba</option>
+                    <option value="Iran">Iran</option>
+                    <option value="Honduras">Honduras</option>
+                    <option value="Philippines">Philippines</option>
+                    <option value="Italy">Italy</option>
+                    <option value="Poland">Poland</option>
+                    <option value="Jamaica">Jamaica</option>
+                    <option value="Vietnam">Vietnam</option>
+                    <option value="Mexico">Mexico</option>
+                    <option value="Portugal">Portugal</option>
+                    <option value="Ireland">Ireland</option>
+                    <option value="France">France</option>
+                    <option value="Dominican-Republic">Dominican-Republic</option>
+                    <option value="Laos">Laos</option>
+                    <option value="Ecuador">Ecuador</option>
+                    <option value="Taiwan">Taiwan</option>
+                    <option value="Haiti">Haiti</option>
+                    <option value="Columbia">Columbia</option>
+                    <option value="Hungary">Hungary</option>
+                    <option value="Guatemala">Guatemala</option>
+                    <option value="Nicaragua">Nicaragua</option>
+                    <option value="Scotland">Scotland</option>
+                    <option value="Thailand">Thailand</option>
+                    <option value="Yugoslavia">Yugoslavia</option>
+                    <option value="El-Salvador">El-Salvador</option>
+                    <option value="Trinadad&Tobago">Trinadad&Tobago</option>
+                    <option value="Peru">Peru</option>
+                    <option value="Hong">Hong</option>
+                    <option value="Holand-Netherlands">Holand-Netherlands</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" onclick="fillSampleData()" class="btn btn-secondary">Fill Sample Data</button>
+            <button type="submit" class="btn btn-primary">Predict</button>
+        </div>
+    </form>
+    
+    <div id="result" class="result-container" style="display: none;">
+        <h3>Prediction Result</h3>
+        <div id="resultContent"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function fillSampleData() {
+    document.getElementById('age').value = 39;
+    document.getElementById('workclass').value = 'State-gov';
+    document.getElementById('fnlwgt').value = 77516;
+    document.getElementById('education').value = 'Bachelors';
+    document.getElementById('education-num').value = 13;
+    document.getElementById('marital-status').value = 'Never-married';
+    document.getElementById('occupation').value = 'Adm-clerical';
+    document.getElementById('relationship').value = 'Not-in-family';
+    document.getElementById('race').value = 'White';
+    document.getElementById('sex').value = 'Male';
+    document.getElementById('capital-gain').value = 2174;
+    document.getElementById('capital-loss').value = 0;
+    document.getElementById('hours-per-week').value = 40;
+    document.getElementById('native-country').value = 'United-States';
+}
+
+document.getElementById('predictForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const features = {};
+    for (const [key, value] of formData.entries()) {
+        features[key] = isNaN(value) ? value : Number(value);
+    }
+    
+    try {
+        const response = await fetch('/predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ features })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('resultContent').innerHTML = `
+                <div class="result-success">
+                    <p><strong>Prediction:</strong> ${data.prediction === 1 ? '>50K' : '<=50K'}</p>
+                    <p><strong>Request ID:</strong> ${data.request_id}</p>
+                    <h4>Top Features:</h4>
+                    <ul>
+                        ${data.top_features.slice(0, 5).map(f => 
+                            `<li><strong>${f.feature}:</strong> ${f.shap_value.toFixed(4)}</li>`
+                        ).join('')}
+                    </ul>
+                </div>
+            `;
+        } else {
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('resultContent').innerHTML = `
+                <div class="result-error">
+                    <p><strong>Error:</strong> ${data.error}</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        document.getElementById('result').style.display = 'block';
+        document.getElementById('resultContent').innerHTML = `
+            <div class="result-error">
+                <p><strong>Error:</strong> ${error.message}</p>
+            </div>
+        `;
+    }
+});
+</script>
+{% endblock %}
+

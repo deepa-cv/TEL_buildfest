@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard">
+    <h2>Welcome to Fairness Monitoring Dashboard</h2>
+    <p>This dashboard allows you to:</p>
+    
+    <div class="card-grid">
+        {# <div class="card">
+            <h3>🔮 Predict</h3>
+            <p>Make predictions using the ML model</p>
+            <a href="{{ url_for('predict_page') }}" class="btn btn-primary">Go to Predict</a>
+        </div> #}
+        
+        <div class="card">
+            <h3>📊 SHAP Explanation</h3>
+            <p>Get feature importance explanations</p>
+            <a href="{{ url_for('explain_page') }}" class="btn btn-primary">Go to SHAP</a>
+        </div>
+        
+        <div class="card">
+            <h3>⚖️ Counterfactual Test</h3>
+            <p>Test fairness by flipping attributes</p>
+            <a href="{{ url_for('counterfactual_page') }}" class="btn btn-primary">Run Test</a>
+        </div>
+        
+        <div class="card">
+            <h3>📈 Grafana Dashboards</h3>
+            <p>View analytics and visualizations</p>
+            <a href="{{ url_for('grafana_page') }}" class="btn btn-primary">View Dashboards</a>
+        </div>
+    </div>
+    
+    <div class="info-section">
+        <h3>API Endpoints</h3>
+        <ul>
+            {# <li><code>POST /predict</code> - Make a prediction</li> #}
+            <li><code>POST /explain</code> - Get SHAP explanations</li>
+            <li><code>POST /counterfactual_test</code> - Run counterfactual fairness test</li>
+            <li><code>GET /health</code> - Health check</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+

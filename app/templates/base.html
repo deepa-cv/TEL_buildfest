@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Fairness Monitoring Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <h1>Fairness Monitoring Dashboard</h1>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                {# <li><a href="{{ url_for('predict_page') }}">Predict</a></li> #}
+                <li><a href="{{ url_for('explain_page') }}">SHAP Explanation</a></li>
+                <li><a href="{{ url_for('counterfactual_page') }}">Counterfactual Test</a></li>
+                <li><a href="{{ url_for('grafana_page') }}">Grafana Dashboards</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

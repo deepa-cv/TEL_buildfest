@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import psycopg2
 import os
 import uuid
@@ -262,15 +262,27 @@ def compute_shap(feat_dict):
 # ------------------------------------------------------------
 @app.route("/", methods=["GET"])
 def index():
-    return """
-    <h2>Fairness Monitoring API</h2>
-    <ul>
-        <li>GET /health</li>
-        <li>POST /predict</li>
-        <li>POST /counterfactual_test</li>
-        <li>POST /explain</li>
-    </ul>
-    """
+    return render_template("index.html")
+
+
+# @app.route("/predict", methods=["GET"])
+# def predict_page():
+#     return render_template("predict.html")
+
+
+@app.route("/explain", methods=["GET"])
+def explain_page():
+    return render_template("explain.html")
+
+
+@app.route("/counterfactual", methods=["GET"])
+def counterfactual_page():
+    return render_template("counterfactual.html")
+
+
+@app.route("/grafana", methods=["GET"])
+def grafana_page():
+    return render_template("grafana.html")
 
 
 # ------------------------------------------------------------
