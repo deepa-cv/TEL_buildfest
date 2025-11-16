@@ -1,0 +1,29 @@
+CREATE TABLE IF NOT EXISTS decisions (
+    id SERIAL PRIMARY KEY,
+    request_id VARCHAR(64),
+    timestamp TIMESTAMPTZ DEFAULT NOW(),
+    model_version VARCHAR(32),
+    group_label VARCHAR(32),
+    prediction INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS fairness_metrics (
+    id SERIAL PRIMARY KEY,
+    calc_time TIMESTAMPTZ DEFAULT NOW(),
+    window_start TIMESTAMPTZ,
+    window_end TIMESTAMPTZ,
+    group_a_selection_rate DOUBLE PRECISION,
+    group_b_selection_rate DOUBLE PRECISION,
+    disparate_impact DOUBLE PRECISION,
+    status VARCHAR(16)
+);
+
+CREATE TABLE IF NOT EXISTS system_status (
+    id BOOLEAN PRIMARY KEY DEFAULT TRUE,
+    status VARCHAR(16),
+    safe_mode BOOLEAN
+);
+
+INSERT INTO system_status (id,status,safe_mode)
+VALUES (TRUE,'FAIR',FALSE)
+ON CONFLICT (id) DO NOTHING;
