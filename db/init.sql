@@ -57,3 +57,31 @@ CREATE TABLE IF NOT EXISTS decision_logs (
     shap_values JSONB,
     top_features JSONB
 );
+
+CREATE TABLE IF NOT EXISTS bias_reports (
+    id SERIAL PRIMARY KEY,
+    report_id VARCHAR(64) UNIQUE NOT NULL,
+    timestamp TIMESTAMPTZ DEFAULT NOW(),
+    reporter_name VARCHAR(255) NOT NULL,
+    reporter_role VARCHAR(255) NOT NULL,
+    reporter_team VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    related_request_id VARCHAR(64),
+    suspected_feature VARCHAR(255),
+    status VARCHAR(32) DEFAULT 'open',
+    priority VARCHAR(32) DEFAULT 'medium',
+    reviewer_notes TEXT,
+    reviewed_by VARCHAR(255),
+    reviewed_at TIMESTAMPTZ,
+    resolved_at TIMESTAMPTZ,
+    additional_context JSONB
+);
+
+-- Create index on report_id for faster lookups
+CREATE INDEX IF NOT EXISTS idx_bias_reports_report_id ON bias_reports(report_id);
+
+-- Create index on status for filtering
+CREATE INDEX IF NOT EXISTS idx_bias_reports_status ON bias_reports(status);
+
+-- Create index on priority for filtering
+CREATE INDEX IF NOT EXISTS idx_bias_reports_priority ON bias_reports(priority);

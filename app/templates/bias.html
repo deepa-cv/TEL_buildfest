@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Report Bias Issue - Fairness Monitoring{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Report Bias Issue</h2>
+    <p>Submit a report if you suspect model decisions are biased or unfair. This helps model risk teams identify and address bias patterns.</p>
+    
+    <form id="biasReportForm" class="feature-form">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="reporter_name">Reporter Name *</label>
+                <div class="field-description">Your name</div>
+                <input type="text" id="reporter_name" name="reporter_name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="reporter_role">Reporter Role *</label>
+                <div class="field-description">Your role (e.g., Fraud Analyst, Credit Underwriter)</div>
+                <input type="text" id="reporter_role" name="reporter_role" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="reporter_team">Reporter Team *</label>
+                <div class="field-description">Your team or department</div>
+                <input type="text" id="reporter_team" name="reporter_team" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="priority">Priority *</label>
+                <div class="field-description">How urgent is this issue?</div>
+                <select id="priority" name="priority" required>
+                    <option value="medium" selected>Medium</option>
+                    <option value="low">Low</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="description">Description *</label>
+                <div class="field-description">Describe the suspected bias issue in detail</div>
+                <textarea id="description" name="description" rows="5" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; font-family: inherit;"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="suspected_feature">Suspected Feature</label>
+                <div class="field-description">Which feature might be causing bias? (e.g., race, sex, location)</div>
+                <input type="text" id="suspected_feature" name="suspected_feature" placeholder="e.g., race, sex, native-country">
+            </div>
+            
+            <div class="form-group">
+                <label for="related_request_id">Related Request ID</label>
+                <div class="field-description">Optional: Link to a specific prediction request ID</div>
+                <input type="text" id="related_request_id" name="related_request_id" placeholder="e.g., uuid-here">
+            </div>
+            
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="additional_context">Additional Context</label>
+                <div class="field-description">Optional: Any additional context (JSON format)</div>
+                <textarea id="additional_context" name="additional_context" rows="3" placeholder='{"transaction_amount": 150.00, "location": "rural"}' style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; font-family: monospace;"></textarea>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" onclick="fillSampleData()" class="btn btn-secondary">Fill Sample Data</button>
+            <button type="reset" class="btn btn-secondary">Clear Form</button>
+            <button type="submit" class="btn btn-primary">Submit Report</button>
+        </div>
+    </form>
+    
+    <div id="result" class="result-container" style="display: none;">
+        <h3>Report Submission Result</h3>
+        <div id="resultContent"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function fillSampleData() {
+    document.getElementById('reporter_name').value = 'John Doe';
+    document.getElementById('reporter_role').value = 'Fraud Analyst';
+    document.getElementById('reporter_team').value = 'Fraud Team';
+    document.getElementById('priority').value = 'high';
+    document.getElementById('description').value = 'Multiple rural transactions flagged as fraud. Customer history shows legitimate patterns. These transactions seem fine - was it because of the location? Suspect the model may be overfitting to urban data.';
+    document.getElementById('suspected_feature').value = 'native-country';
+    document.getElementById('related_request_id').value = '';
+    document.getElementById('additional_context').value = JSON.stringify({
+        "pattern_observed": "Multiple rural transactions flagged",
+        "time_period": "last_week",
+        "transaction_count": 15,
+        "false_positive_rate": "high"
+    }, null, 4);
+}
+
+document.getElementById('biasReportForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const reportData = {
+        reporter_name: formData.get('reporter_name'),
+        reporter_role: formData.get('reporter_role'),
+        reporter_team: formData.get('reporter_team'),
+        description: formData.get('description'),
+        priority: formData.get('priority'),
+        suspected_feature: formData.get('suspected_feature') || null,
+        related_request_id: formData.get('related_request_id') || null
+    };
+    
+    // Parse additional context if provided
+    const additionalContextText = formData.get('additional_context');
+    if (additionalContextText && additionalContextText.trim()) {
+        try {
+            reportData.additional_context = JSON.parse(additionalContextText);
+        } catch (err) {
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('resultContent').innerHTML = `
+                <div class="result-error">
+                    <p><strong>Error:</strong> Invalid JSON in Additional Context field. ${err.message}</p>
+                </div>
+            `;
+            return;
+        }
+    }
+    
+    try {
+        const response = await fetch('/bias_report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(reportData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            document.getElementById('result').style.display = 'block';
+            
+            const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleString() : 'N/A';
+            
+            document.getElementById('resultContent').innerHTML = `
+                <div class="result-success">
+                    <div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+                        <h4>✓ Report Submitted Successfully</h4>
+                    </div>
+                    <p><strong>Report ID:</strong> <code>${data.report_id}</code></p>
+                    <p><strong>Status:</strong> ${data.status}</p>
+                    <p><strong>Timestamp:</strong> ${timestamp}</p>
+                    <p style="margin-top: 1rem;"><a href="/bias_reports" class="btn btn-primary">View All Reports</a></p>
+                </div>
+            `;
+            
+            // Reset form after successful submission
+            document.getElementById('biasReportForm').reset();
+        } else {
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('resultContent').innerHTML = `
+                <div class="result-error">
+                    <p><strong>Error:</strong> ${data.error || 'Failed to submit report'}</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        document.getElementById('result').style.display = 'block';
+        document.getElementById('resultContent').innerHTML = `
+            <div class="result-error">
+                <p><strong>Error:</strong> ${error.message}</p>
+            </div>
+        `;
+    }
+});
+</script>
+{% endblock %}
+

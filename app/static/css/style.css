@@ -324,6 +324,12 @@ body {
     text-decoration: underline;
 }
 
+/* Textarea styling */
+textarea {
+    font-family: inherit;
+    resize: vertical;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .navbar .container {

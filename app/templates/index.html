@@ -25,6 +25,18 @@
         </div>
         
         <div class="card">
+            <h3>🚨 Report Bias Issue</h3>
+            <p>Submit a report if you suspect bias in model decisions</p>
+            <a href="{{ url_for('bias_page') }}" class="btn btn-primary">Submit Report</a>
+        </div>
+        
+        <div class="card">
+            <h3>📋 Bias Reports</h3>
+            <p>View and manage submitted bias reports</p>
+            <a href="/bias_reports" class="btn btn-primary">View Reports</a>
+        </div>
+        
+        <div class="card">
             <h3>📈 Grafana Dashboards</h3>
             <p>View analytics and visualizations</p>
             <a href="{{ url_for('grafana_page') }}" class="btn btn-primary">View Dashboards</a>
@@ -37,6 +49,10 @@
             {# <li><code>POST /predict</code> - Make a prediction</li> #}
             <li><code>POST /explain</code> - Get SHAP explanations</li>
             <li><code>POST /counterfactual_test</code> - Run counterfactual fairness test</li>
+            <li><code>POST /bias_report</code> - Submit a bias report</li>
+            <li><code>GET /bias_reports</code> - List bias reports</li>
+            <li><code>GET /bias_report/&lt;report_id&gt;</code> - Get specific bias report</li>
+            <li><code>PATCH /bias_report/&lt;report_id&gt;</code> - Update bias report</li>
             <li><code>GET /health</code> - Health check</li>
         </ul>
     </div>

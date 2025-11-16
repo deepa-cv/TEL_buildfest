@@ -1,0 +1,716 @@
+{% extends "base.html" %}
+
+{% block title %}Bias Reports - Fairness Monitoring{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reports-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .filters {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .filter-group label {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #666;
+    }
+    
+    .filter-group select, .filter-group input {
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+    
+    .reports-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 4px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .reports-table th {
+        background-color: #2c3e50;
+        color: white;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+    }
+    
+    .reports-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .reports-table tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    
+    .status-open {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-reviewed {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .status-in_progress {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+    
+    .status-resolved {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .status-closed {
+        background-color: #e2e3e5;
+        color: #383d41;
+    }
+    
+    .priority-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    
+    .priority-high {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .priority-medium {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .priority-low {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .description-cell {
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .report-link {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .report-link:hover {
+        text-decoration: underline;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    
+    .report-detail {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .report-detail h3 {
+        margin-bottom: 1rem;
+        color: #2c3e50;
+    }
+    
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .detail-label {
+        font-size: 0.85rem;
+        color: #666;
+        margin-bottom: 0.25rem;
+    }
+    
+    .detail-value {
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .notes-section {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+        border-left: 4px solid #007bff;
+    }
+    
+    .notes-section h4 {
+        margin-bottom: 0.5rem;
+        color: #2c3e50;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #666;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="reports-header">
+        <h2>Bias Reports</h2>
+        <a href="/bias" class="btn btn-primary">Submit New Report</a>
+    </div>
+    
+    <div class="filters">
+        <div class="filter-group">
+            <label for="statusFilter">Status</label>
+            <select id="statusFilter">
+                <option value="">All Statuses</option>
+                <option value="open">Open</option>
+                <option value="reviewed">Reviewed</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="priorityFilter">Priority</label>
+            <select id="priorityFilter">
+                <option value="">All Priorities</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="teamFilter">Team</label>
+            <input type="text" id="teamFilter" placeholder="Filter by team">
+        </div>
+        <div class="filter-group" style="justify-content: flex-end;">
+            <label>&nbsp;</label>
+            <button onclick="applyFilters()" class="btn btn-primary">Apply Filters</button>
+        </div>
+    </div>
+    
+    <div id="reportDetail" style="display: none;" class="report-detail">
+        <h3>Report Details</h3>
+        <div id="reportDetailContent"></div>
+    </div>
+    
+    <div id="reportsContainer">
+        <table class="reports-table">
+            <thead>
+                <tr>
+                    <th>Report ID</th>
+                    <th>Timestamp</th>
+                    <th>Reporter</th>
+                    <th>Team</th>
+                    <th>Description</th>
+                    <th>Suspected Feature</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="reportsTableBody">
+                <tr>
+                    <td colspan="9" class="empty-state">Loading reports...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div id="pagination" class="pagination" style="display: none;">
+        <div>
+            <span id="paginationInfo"></span>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            <button id="prevBtn" onclick="loadReports(prevOffset)" class="btn btn-secondary" disabled>Previous</button>
+            <button id="nextBtn" onclick="loadReports(nextOffset)" class="btn btn-secondary" disabled>Next</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentOffset = 0;
+let nextOffset = 0;
+let prevOffset = 0;
+let totalReports = 0;
+let limit = 20;
+
+function getStatusBadgeClass(status) {
+    return `status-${status.toLowerCase().replace(' ', '_')}`;
+}
+
+function getPriorityBadgeClass(priority) {
+    return `priority-${priority.toLowerCase()}`;
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleString();
+}
+
+async function loadReports(offset = 0) {
+    currentOffset = offset;
+    
+    const status = document.getElementById('statusFilter').value;
+    const priority = document.getElementById('priorityFilter').value;
+    const team = document.getElementById('teamFilter').value;
+    
+    const params = new URLSearchParams({
+        limit: limit,
+        offset: offset
+    });
+    
+    if (status) params.append('status', status);
+    if (priority) params.append('priority', priority);
+    if (team) params.append('reporter_team', team);
+    
+    try {
+        const response = await fetch(`/bias_reports?${params.toString()}`, {
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        // Read response as text first (so we can inspect it)
+        const text = await response.text();
+        
+        // Try to parse as JSON
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (jsonError) {
+            // If JSON parsing fails, it's likely an HTML error page
+            console.error('Failed to parse JSON. Response:', text.substring(0, 500));
+            document.getElementById('reportsTableBody').innerHTML = `
+                <tr>
+                    <td colspan="9" class="empty-state">Error: Server returned invalid response. Status: ${response.status}<br>Check browser console for details.</td>
+                </tr>
+            `;
+            return;
+        }
+        
+        if (response.ok) {
+            totalReports = data.total;
+            nextOffset = data.offset + data.limit;
+            prevOffset = Math.max(0, data.offset - data.limit);
+            
+            const tbody = document.getElementById('reportsTableBody');
+            
+            if (data.reports.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="empty-state">No reports found</td>
+                    </tr>
+                `;
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+            
+            tbody.innerHTML = data.reports.map(report => `
+                <tr>
+                    <td><code style="font-size: 0.85rem;">${report.report_id.substring(0, 8)}...</code></td>
+                    <td>${formatDate(report.timestamp)}</td>
+                    <td>${report.reporter_name}<br><small style="color: #666;">${report.reporter_role}</small></td>
+                    <td>${report.reporter_team}</td>
+                    <td class="description-cell" title="${report.description}">${report.description}</td>
+                    <td>${report.suspected_feature || '-'}</td>
+                    <td><span class="priority-badge ${getPriorityBadgeClass(report.priority)}">${report.priority}</span></td>
+                    <td><span class="status-badge ${getStatusBadgeClass(report.status)}">${report.status}</span></td>
+                    <td>
+                        <a href="#" onclick="viewReportDetail('${report.report_id}'); return false;" class="report-link">View</a>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Update pagination
+            document.getElementById('pagination').style.display = 'flex';
+            document.getElementById('paginationInfo').textContent = 
+                `Showing ${data.offset + 1}-${Math.min(data.offset + data.limit, data.total)} of ${data.total} reports`;
+            
+            document.getElementById('prevBtn').disabled = data.offset === 0;
+            document.getElementById('nextBtn').disabled = nextOffset >= data.total;
+        } else {
+            // Handle error response (which should be JSON)
+            const errorMessage = data.error || `HTTP ${response.status}: ${response.statusText}`;
+            document.getElementById('reportsTableBody').innerHTML = `
+                <tr>
+                    <td colspan="9" class="empty-state">Error loading reports: ${errorMessage}</td>
+                </tr>
+            `;
+            console.error('Error response:', data);
+        }
+    } catch (error) {
+        document.getElementById('reportsTableBody').innerHTML = `
+            <tr>
+                <td colspan="9" class="empty-state">Error: ${error.message}</td>
+            </tr>
+        `;
+    }
+}
+
+async function viewReportDetail(reportId) {
+    try {
+        // Ensure reportId is properly encoded for URL
+        const encodedReportId = encodeURIComponent(reportId);
+        const response = await fetch(`/bias_report/${encodedReportId}`);
+        
+        // Read response as text first (so we can inspect it)
+        const text = await response.text();
+        
+        // Try to parse as JSON
+        let report;
+        try {
+            report = JSON.parse(text);
+        } catch (jsonError) {
+            // If JSON parsing fails, it's likely an HTML error page
+            console.error('Failed to parse JSON. Response:', text.substring(0, 500));
+            alert(`Error: Server returned invalid response. Status: ${response.status}\n\nResponse appears to be HTML, not JSON. Check browser console for details.`);
+            return;
+        }
+        
+        if (!response.ok) {
+            // Handle error response (which should be JSON)
+            const errorMessage = report.error || `HTTP ${response.status}: ${response.statusText}`;
+            alert(`Error loading report: ${errorMessage}`);
+            console.error('Error response:', report);
+            return;
+        }
+        
+        if (report) {
+            const detailDiv = document.getElementById('reportDetail');
+            const contentDiv = document.getElementById('reportDetailContent');
+            
+            contentDiv.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Report ID</div>
+                        <div class="detail-value"><code>${report.report_id}</code></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Timestamp</div>
+                        <div class="detail-value">${formatDate(report.timestamp)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Status</div>
+                        <div class="detail-value"><span class="status-badge ${getStatusBadgeClass(report.status)}">${report.status}</span></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Priority</div>
+                        <div class="detail-value"><span class="priority-badge ${getPriorityBadgeClass(report.priority)}">${report.priority}</span></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Reporter Name</div>
+                        <div class="detail-value">${report.reporter_name}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Reporter Role</div>
+                        <div class="detail-value">${report.reporter_role}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Reporter Team</div>
+                        <div class="detail-value">${report.reporter_team}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Suspected Feature</div>
+                        <div class="detail-value">${report.suspected_feature || 'Not specified'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Related Request ID</div>
+                        <div class="detail-value">
+                            ${report.related_request_id ? `
+                                <code>${report.related_request_id}</code><br>
+                                <button onclick="loadSHAPTraceability('${report.report_id}')" class="btn btn-primary" style="margin-top: 0.5rem; font-size: 0.85rem;">
+                                    🔍 Load SHAP Traceability
+                                </button>
+                            ` : 'Not specified'}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="detail-item" style="margin-top: 1rem;">
+                    <div class="detail-label">Description</div>
+                    <div class="detail-value" style="padding: 1rem; background: #f8f9fa; border-radius: 4px; margin-top: 0.5rem;">${report.description}</div>
+                </div>
+                
+                <div id="shapTraceabilitySection" style="display: none; margin-top: 1.5rem;">
+                    <!-- SHAP traceability will be loaded here -->
+                </div>
+                
+                ${report.reviewer_notes ? `
+                    <div class="notes-section">
+                        <h4>Reviewer Notes</h4>
+                        <p>${report.reviewer_notes}</p>
+                        <small style="color: #666;">
+                            Reviewed by: ${report.reviewed_by || 'N/A'}<br>
+                            Reviewed at: ${formatDate(report.reviewed_at)}
+                        </small>
+                    </div>
+                ` : ''}
+                
+                ${report.resolved_at ? `
+                    <div class="detail-item" style="margin-top: 1rem;">
+                        <div class="detail-label">Resolved At</div>
+                        <div class="detail-value">${formatDate(report.resolved_at)}</div>
+                    </div>
+                ` : ''}
+                
+                ${report.additional_context && Object.keys(report.additional_context).length > 0 ? `
+                    <div class="detail-item" style="margin-top: 1rem;">
+                        <div class="detail-label">Additional Context</div>
+                        <div class="detail-value" style="padding: 1rem; background: #f8f9fa; border-radius: 4px; margin-top: 0.5rem; font-family: monospace; white-space: pre-wrap;">${JSON.stringify(report.additional_context, null, 2)}</div>
+                    </div>
+                ` : ''}
+            `;
+            
+            detailDiv.style.display = 'block';
+            detailDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    } catch (error) {
+        alert(`Error loading report: ${error.message}`);
+    }
+}
+
+async function loadSHAPTraceability(reportId) {
+    const traceabilitySection = document.getElementById('shapTraceabilitySection');
+    traceabilitySection.innerHTML = '<p style="color: #666;">Loading SHAP traceability...</p>';
+    traceabilitySection.style.display = 'block';
+    
+    try {
+        const response = await fetch(`/bias_report/${reportId}/traceability`);
+        const data = await response.json();
+        
+        if (response.ok && data.traceability) {
+            const trace = data.traceability;
+            const biasRiskColor = trace.bias_risk === 'high' ? '#dc3545' : trace.bias_risk === 'medium' ? '#ffc107' : '#28a745';
+            
+            let html = `
+                <div style="background: #fff; border: 2px solid ${biasRiskColor}; border-radius: 8px; padding: 1.5rem; margin-top: 1rem;">
+                    <h3 style="margin-top: 0; color: #2c3e50; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>🔍 SHAP Traceability Analysis</span>
+                        <span style="margin-left: auto; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem; background: ${biasRiskColor}; color: white;">
+                            Bias Risk: ${trace.bias_risk.toUpperCase()}
+                        </span>
+                    </h3>
+                    
+                    <div class="detail-grid" style="margin-top: 1rem;">
+                        <div class="detail-item">
+                            <div class="detail-label">Prediction</div>
+                            <div class="detail-value">
+                                <span style="font-weight: 600; color: ${trace.prediction === 1 ? '#28a745' : '#dc3545'};">
+                                    ${trace.prediction_label}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Model Version</div>
+                            <div class="detail-value">${trace.model_version}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Decision Timestamp</div>
+                            <div class="detail-value">${formatDate(trace.timestamp)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Request ID</div>
+                            <div class="detail-value"><code style="font-size: 0.85rem;">${trace.request_id}</code></div>
+                        </div>
+                    </div>
+            `;
+            
+            // Show protected attributes influence
+            if (trace.protected_attributes_influence && trace.protected_attributes_influence.length > 0) {
+                html += `
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                        <h4 style="margin-top: 0; color: #856404;">⚠️ Protected Attributes Influence</h4>
+                        <table style="width: 100%; margin-top: 0.5rem; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f8f9fa;">
+                                    <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid #dee2e6;">Feature</th>
+                                    <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid #dee2e6;">SHAP Value</th>
+                                    <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid #dee2e6;">Influence Level</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                for (const attr of trace.protected_attributes_influence) {
+                    const influenceColor = attr.influence_level === 'high' ? '#dc3545' : attr.influence_level === 'medium' ? '#ffc107' : '#6c757d';
+                    html += `
+                        <tr>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid #dee2e6;"><strong>${attr.feature}</strong></td>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid #dee2e6; color: ${attr.shap_value >= 0 ? '#28a745' : '#dc3545'};">
+                                ${attr.shap_value >= 0 ? '+' : ''}${attr.shap_value.toFixed(4)}
+                            </td>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid #dee2e6;">
+                                <span style="padding: 0.25rem 0.5rem; border-radius: 4px; background: ${influenceColor}; color: white; font-size: 0.85rem;">
+                                    ${attr.influence_level.toUpperCase()}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                }
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #d4edda; border-left: 4px solid #28a745; border-radius: 4px;">
+                        <p style="margin: 0; color: #155724;">✓ No protected attributes had significant influence on this decision (based on SHAP values).</p>
+                    </div>
+                `;
+            }
+            
+            // Show bias indicators
+            if (trace.bias_indicators && trace.bias_indicators.length > 0) {
+                html += `
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #f8d7da; border-left: 4px solid #dc3545; border-radius: 4px;">
+                        <h4 style="margin-top: 0; color: #721c24;">🚨 Bias Indicators Detected</h4>
+                        <ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem; color: #721c24;">
+                `;
+                for (const indicator of trace.bias_indicators) {
+                    html += `<li><strong>${indicator.feature}</strong> (SHAP: ${indicator.shap_value >= 0 ? '+' : ''}${indicator.shap_value.toFixed(4)}) - ${indicator.concern}</li>`;
+                }
+                html += `
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            // Show top contributing features
+            if (trace.top_features && trace.top_features.length > 0) {
+                html += `
+                    <div style="margin-top: 1.5rem;">
+                        <h4 style="color: #2c3e50;">Top Contributing Features (SHAP Values)</h4>
+                        <table style="width: 100%; margin-top: 0.5rem; border-collapse: collapse; background: white; border-radius: 4px; overflow: hidden;">
+                            <thead>
+                                <tr style="background: #2c3e50; color: white;">
+                                    <th style="padding: 0.75rem; text-align: left;">Feature</th>
+                                    <th style="padding: 0.75rem; text-align: left;">SHAP Value</th>
+                                    <th style="padding: 0.75rem; text-align: left;">Contribution</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                for (const feat of trace.top_features.slice(0, 10)) {
+                    const isProtected = ['race', 'sex', 'native-country'].includes(feat.feature);
+                    const rowStyle = isProtected ? 'background: #fff3cd;' : '';
+                    const protectedBadge = isProtected ? '<span style="margin-left: 0.5rem; padding: 0.15rem 0.4rem; border-radius: 4px; background: #ffc107; color: #856404; font-size: 0.75rem;">PROTECTED</span>' : '';
+                    const barWidth = Math.min(100, Math.abs(feat.shap_value) * 200);
+                    html += `
+                        <tr style="${rowStyle}">
+                            <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">
+                                <strong>${feat.feature}</strong>${protectedBadge}
+                            </td>
+                            <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6; color: ${feat.shap_value >= 0 ? '#28a745' : '#dc3545'}; font-weight: 600;">
+                                ${feat.shap_value >= 0 ? '+' : ''}${feat.shap_value.toFixed(4)}
+                            </td>
+                            <td style="padding: 0.75rem; border-bottom: 1px solid #dee2e6;">
+                                <div style="background: #e9ecef; border-radius: 4px; height: 20px; position: relative;">
+                                    <div style="background: ${feat.shap_value >= 0 ? '#28a745' : '#dc3545'}; height: 100%; width: ${barWidth}%; border-radius: 4px;"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
+                html += `
+                            </tbody>
+                        </table>
+                        <p style="margin-top: 0.5rem; font-size: 0.85rem; color: #666;">
+                            <strong>Note:</strong> SHAP values show how much each feature contributed to the prediction. 
+                            Positive values push toward approval, negative values push toward decline. 
+                            High absolute values indicate stronger influence.
+                        </p>
+                    </div>
+                `;
+            }
+            
+            html += `</div>`;
+            traceabilitySection.innerHTML = html;
+        } else {
+            traceabilitySection.innerHTML = `
+                <div style="padding: 1rem; background: #f8d7da; border-left: 4px solid #dc3545; border-radius: 4px; color: #721c24;">
+                    <strong>Error:</strong> ${data.error || 'Could not load SHAP traceability'}<br>
+                    ${data.note ? `<small>${data.note}</small>` : ''}
+                </div>
+            `;
+        }
+    } catch (error) {
+        traceabilitySection.innerHTML = `
+            <div style="padding: 1rem; background: #f8d7da; border-left: 4px solid #dc3545; border-radius: 4px; color: #721c24;">
+                <strong>Error loading traceability:</strong> ${error.message}
+            </div>
+        `;
+    }
+}
+
+function applyFilters() {
+    loadReports(0);
+}
+
+// Load reports on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadReports();
+});
+</script>
+{% endblock %}
+

@@ -22,7 +22,7 @@ REQUIRED_FIELDS = [
 # ------------------------------------------------------------
 # LOAD MODEL + SHAP EXPLAINER
 # ------------------------------------------------------------
-MODEL_PATH = "/app/model.pkl"
+MODEL_PATH = "model.pkl"
 model = joblib.load(MODEL_PATH)
 
 # Handle Pipeline models - extract the underlying model for TreeExplainer
@@ -285,6 +285,17 @@ def grafana_page():
     return render_template("grafana.html")
 
 
+@app.route("/bias", methods=["GET"])
+def bias_page():
+    return render_template("bias.html")
+
+
+@app.route("/bias_reports_page", methods=["GET"])
+def bias_reports_page():
+    """Render the bias reports page."""
+    return render_template("bias_reports.html")
+
+
 # ------------------------------------------------------------
 # HEALTH CHECK
 # ------------------------------------------------------------
@@ -470,6 +481,298 @@ def explain():
         "shap_values": shap_vals,
         "top_features": top_features
     }), 200
+
+
+# ------------------------------------------------------------
+# BIAS REPORTING ENDPOINTS
+# ------------------------------------------------------------
+@app.route("/bias_report", methods=["POST"])
+def submit_bias_report():
+    """Submit a new bias incident report."""
+    data = request.json
+    
+    # Required fields
+    reporter_name = data.get("reporter_name")
+    reporter_role = data.get("reporter_role")
+    reporter_team = data.get("reporter_team")
+    description = data.get("description")
+    
+    if not all([reporter_name, reporter_role, reporter_team, description]):
+        return jsonify({
+            "error": "Missing required fields: reporter_name, reporter_role, reporter_team, description"
+        }), 400
+    
+    # Optional fields
+    related_request_id = data.get("related_request_id")
+    suspected_feature = data.get("suspected_feature")
+    priority = data.get("priority", "medium")
+    additional_context = data.get("additional_context", {})
+    
+    # Validate priority
+    if priority not in ["low", "medium", "high"]:
+        priority = "medium"
+    
+    # Generate report ID
+    report_id = str(uuid.uuid4())
+    
+    # Insert into database
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            INSERT INTO bias_reports (
+                report_id, reporter_name, reporter_role, reporter_team,
+                description, related_request_id, suspected_feature,
+                status, priority, additional_context
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+        """, (
+            report_id, reporter_name, reporter_role, reporter_team,
+            description, related_request_id, suspected_feature,
+            "open", priority, json.dumps(additional_context)
+        ))
+        conn.commit()
+        
+        # Get timestamp
+        cur.execute("SELECT timestamp FROM bias_reports WHERE report_id = %s", (report_id,))
+        timestamp = cur.fetchone()[0]
+        
+        return jsonify({
+            "report_id": report_id,
+            "timestamp": timestamp.isoformat() if timestamp else None,
+            "status": "open",
+            "message": "Bias report submitted successfully"
+        }), 201
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route("/bias_reports", methods=["GET"])
+def list_bias_reports():
+    """List all bias reports with optional filters."""
+    # Check if this is an AJAX/API request (has query params or wants JSON)
+    wants_json = (
+        request.args.get("limit") or 
+        request.args.get("status") or 
+        request.args.get("priority") or
+        request.args.get("reporter_team") or
+        "application/json" in request.headers.get("Accept", "")
+    )
+    
+    # If no query params and wants HTML, return the template
+    if not wants_json:
+        return render_template("bias_reports.html")
+    
+    # Otherwise return JSON data
+    # Get query parameters
+    status_filter = request.args.get("status")
+    priority_filter = request.args.get("priority")
+    reporter_team_filter = request.args.get("reporter_team")
+    limit = int(request.args.get("limit", 100))
+    offset = int(request.args.get("offset", 0))
+    
+    # Validate limit
+    if limit > 1000:
+        limit = 1000
+    if limit < 1:
+        limit = 1
+    
+    # Build query
+    query = "SELECT report_id, timestamp, reporter_name, reporter_role, reporter_team, description, related_request_id, suspected_feature, status, priority, reviewer_notes, reviewed_by, reviewed_at, resolved_at, additional_context FROM bias_reports WHERE 1=1"
+    params = []
+    
+    if status_filter:
+        query += " AND status = %s"
+        params.append(status_filter)
+    
+    if priority_filter:
+        query += " AND priority = %s"
+        params.append(priority_filter)
+    
+    if reporter_team_filter:
+        query += " AND reporter_team = %s"
+        params.append(reporter_team_filter)
+    
+    query += " ORDER BY timestamp DESC LIMIT %s OFFSET %s"
+    params.extend([limit, offset])
+    
+    # Count total
+    count_query = "SELECT COUNT(*) FROM bias_reports WHERE 1=1"
+    count_params = []
+    if status_filter:
+        count_query += " AND status = %s"
+        count_params.append(status_filter)
+    if priority_filter:
+        count_query += " AND priority = %s"
+        count_params.append(priority_filter)
+    if reporter_team_filter:
+        count_query += " AND reporter_team = %s"
+        count_params.append(reporter_team_filter)
+    
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        # Get total count
+        cur.execute(count_query, count_params)
+        total = cur.fetchone()[0]
+        
+        # Get reports
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        
+        reports = []
+        for row in rows:
+            reports.append({
+                "report_id": row[0],
+                "timestamp": row[1].isoformat() if row[1] else None,
+                "reporter_name": row[2],
+                "reporter_role": row[3],
+                "reporter_team": row[4],
+                "description": row[5],
+                "related_request_id": row[6],
+                "suspected_feature": row[7],
+                "status": row[8],
+                "priority": row[9],
+                "reviewer_notes": row[10],
+                "reviewed_by": row[11],
+                "reviewed_at": row[12].isoformat() if row[12] else None,
+                "resolved_at": row[13].isoformat() if row[13] else None,
+                "additional_context": row[14] if row[14] else {}
+            })
+        
+        return jsonify({
+            "reports": reports,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route("/bias_report/<report_id>", methods=["GET"])
+def get_bias_report(report_id):
+    """Get full details of a specific bias report."""
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT report_id, timestamp, reporter_name, reporter_role, reporter_team,
+                   description, related_request_id, suspected_feature, status, priority,
+                   reviewer_notes, reviewed_by, reviewed_at, resolved_at, additional_context
+            FROM bias_reports
+            WHERE report_id = %s
+        """, (report_id,))
+        
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"error": "Report not found"}), 404
+        
+        return jsonify({
+            "report_id": row[0],
+            "timestamp": row[1].isoformat() if row[1] else None,
+            "reporter_name": row[2],
+            "reporter_role": row[3],
+            "reporter_team": row[4],
+            "description": row[5],
+            "related_request_id": row[6],
+            "suspected_feature": row[7],
+            "status": row[8],
+            "priority": row[9],
+            "reviewer_notes": row[10],
+            "reviewed_by": row[11],
+            "reviewed_at": row[12].isoformat() if row[12] else None,
+            "resolved_at": row[13].isoformat() if row[13] else None,
+            "additional_context": row[14] if row[14] else {}
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route("/bias_report/<report_id>", methods=["PATCH"])
+def update_bias_report(report_id):
+    """Update a bias report status, add reviewer notes, or change priority."""
+    data = request.json
+    
+    # Check if report exists
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT status FROM bias_reports WHERE report_id = %s", (report_id,))
+        existing = cur.fetchone()
+        if not existing:
+            return jsonify({"error": "Report not found"}), 404
+        
+        # Build update query dynamically
+        updates = []
+        params = []
+        
+        if "status" in data:
+            new_status = data["status"]
+            if new_status not in ["open", "reviewed", "in_progress", "resolved", "closed"]:
+                return jsonify({"error": "Invalid status. Must be: open, reviewed, in_progress, resolved, or closed"}), 400
+            updates.append("status = %s")
+            params.append(new_status)
+            
+            # Auto-set resolved_at if status is resolved or closed
+            if new_status in ["resolved", "closed"]:
+                updates.append("resolved_at = NOW()")
+            elif existing[0] in ["resolved", "closed"] and new_status not in ["resolved", "closed"]:
+                updates.append("resolved_at = NULL")
+        
+        if "priority" in data:
+            new_priority = data["priority"]
+            if new_priority not in ["low", "medium", "high"]:
+                return jsonify({"error": "Invalid priority. Must be: low, medium, or high"}), 400
+            updates.append("priority = %s")
+            params.append(new_priority)
+        
+        if "reviewer_notes" in data:
+            updates.append("reviewer_notes = %s")
+            params.append(data["reviewer_notes"])
+        
+        if "reviewed_by" in data:
+            updates.append("reviewed_by = %s")
+            params.append(data["reviewed_by"])
+            # Set reviewed_at if not already set
+            updates.append("reviewed_at = COALESCE(reviewed_at, NOW())")
+        
+        if "additional_context" in data:
+            updates.append("additional_context = %s::jsonb")
+            params.append(json.dumps(data["additional_context"]))
+        
+        if not updates:
+            return jsonify({"error": "No fields to update"}), 400
+        
+        # Add report_id to params
+        params.append(report_id)
+        
+        # Execute update
+        update_query = f"UPDATE bias_reports SET {', '.join(updates)} WHERE report_id = %s"
+        cur.execute(update_query, params)
+        conn.commit()
+        
+        return jsonify({
+            "report_id": report_id,
+            "status": data.get("status", existing[0]),
+            "message": "Report updated successfully"
+        }), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
 
 
 # ------------------------------------------------------------
