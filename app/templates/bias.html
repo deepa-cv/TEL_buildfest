@@ -45,8 +45,23 @@
             
             <div class="form-group">
                 <label for="suspected_feature">Suspected Feature</label>
-                <div class="field-description">Which feature might be causing bias? (e.g., race, sex, location)</div>
-                <input type="text" id="suspected_feature" name="suspected_feature" placeholder="e.g., race, sex, native-country">
+                <div class="field-description">Which feature might be causing bias?</div>
+                <select id="suspected_feature" name="suspected_feature">
+                    <option value="">Select a feature (optional)</option>
+                    <option value="age">Age</option>
+                    <option value="race">Race</option>
+                    <option value="sex">Sex</option>
+                    <option value="native-country">Native Country</option>
+                    <option value="education">Education</option>
+                    <option value="workclass">Workclass</option>
+                    <option value="marital-status">Marital Status</option>
+                    <option value="relationship">Relationship</option>
+                    <option value="occupation">Occupation</option>
+                    <option value="capital-gain">Capital Gain</option>
+                    <option value="capital-loss">Capital Loss</option>
+                    <option value="hours-per-week">Hours Per Week</option>
+                    <option value="other">Other (please specify in description)</option>
+                </select>
             </div>
             
             <div class="form-group">
