@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HMDA Fair Lending{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/hmda.css') }}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    <header class="topbar">
+        <div class="topbar-inner">
+            <a class="brand" href="{{ url_for('customer_apply') }}">Fair Lending Portal</a>
+            <nav class="topnav">
+                <a href="{{ url_for('customer_apply') }}">Apply</a>
+                <a href="{{ url_for('internal_login') }}">Staff login</a>
+            </nav>
+        </div>
+    </header>
+    <main class="main-wrap">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

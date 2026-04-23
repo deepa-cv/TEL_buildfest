@@ -1,0 +1,88 @@
+{% extends "base_hmda.html" %}
+{% block title %}Operations dashboard{% endblock %}
+
+{% block content %}
+<div class="panel internal-panel">
+    <div class="internal-header">
+        <h1>Operations dashboard</h1>
+        <form method="post" action="{{ url_for('internal_logout') }}" class="inline-form">
+            <button type="submit" class="btn btn-ghost">Sign out</button>
+        </form>
+    </div>
+
+    <div class="card-grid">
+        <a class="card card-link" href="{{ url_for('internal_grafana') }}">
+            <h3>Grafana</h3>
+            <p>Open embedded analytics (same login session not shared with Grafana; use admin credentials if prompted).</p>
+            <span class="card-cta">Open dashboards →</span>
+        </a>
+        <a class="card card-link" href="{{ url_for('internal_fairness') }}">
+            <h3>Group fairness lab</h3>
+            <p>Sliding-window demographic parity, disparate impact, equal opportunity / odds / PPV (with labels), model A vs B.</p>
+            <span class="card-cta">Open fairness lab →</span>
+        </a>
+        <div class="card">
+            <h3>Counterfactual (sex) tests</h3>
+            <p>Recent counterfactual rows where outcome changed: <strong>{{ failed_cf }}</strong> (in last 40 rows shown).</p>
+        </div>
+    </div>
+
+    <h2>Recent decisions</h2>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Request</th>
+                    <th>Prediction</th>
+                    <th>Fairness OK</th>
+                    <th>UI outcome</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in decisions %}
+                <tr>
+                    <td>{{ row.timestamp }}</td>
+                    <td><code>{{ row.request_id[:8] }}…</code></td>
+                    <td>{{ row.prediction }}</td>
+                    <td>{% if row.fairness_passed == None %}—{% elif row.fairness_passed %}yes{% else %}no{% endif %}</td>
+                    <td>{{ row.ui_outcome or "—" }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5">No rows yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h2>Counterfactual log</h2>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Request</th>
+                    <th>Sex orig → cf</th>
+                    <th>Pred orig → cf</th>
+                    <th>Changed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in counterfactuals %}
+                <tr>
+                    <td>{{ row.timestamp }}</td>
+                    <td><code>{{ row.request_id[:8] }}…</code></td>
+                    <td>{{ row.original_sex }} → {{ row.counterfactual_sex }}</td>
+                    <td>{{ row.original_prediction }} → {{ row.counterfactual_prediction }}</td>
+                    <td>{% if row.changed %}yes{% else %}no{% endif %}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5">No rows yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <p class="hint">Grafana base URL: <a href="{{ grafana_url }}" target="_blank" rel="noopener">{{ grafana_url }}</a> — configure <code>GRAFANA_PUBLIC_URL</code> for iframes from the browser.</p>
+</div>
+{% endblock %}

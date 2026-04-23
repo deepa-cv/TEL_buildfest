@@ -1,0 +1,69 @@
+{% extends "base_hmda.html" %}
+{% block title %}Loan application{% endblock %}
+
+{% block content %}
+<div class="panel customer-panel">
+    <h1>Loan application</h1>
+    <p class="lede">Submit your details. You will receive a decision when automated fairness checks pass. If those checks require review, your status will show as <strong>pending</strong>.</p>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" class="form-grid" id="apply-form">
+        {% for section_name, fields in sections.items() %}
+        <fieldset class="form-section">
+            <legend>{{ section_name }}</legend>
+            <div class="fields">
+                {% for name, typ, label in fields %}
+                <label class="field">
+                    <span class="label-text">{{ label }}</span>
+                    {% if name in select_options %}
+                    <select name="{{ name }}" required data-field="{{ name }}" class="field-select">
+                        {% for val, opt_label in select_options[name] %}
+                        <option value="{{ val }}">{{ opt_label }}</option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <input type="{{ typ }}" name="{{ name }}" required step="any"
+                           data-field="{{ name }}">
+                    {% endif %}
+                </label>
+                {% endfor %}
+            </div>
+        </fieldset>
+        {% endfor %}
+
+        <div class="actions">
+            <button type="submit" class="btn btn-primary">Submit application</button>
+            <button type="button" class="btn btn-secondary" id="fill-sample">Fill sample data</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById("fill-sample")?.addEventListener("click", () => {
+    const sample = {
+        loan_amount_000s: "320",
+        applicant_income_000s: "85",
+        loan_type: "1",
+        property_type: "1",
+        loan_type_name: "Conventional",
+        applicant_ethnicity: "2",
+        applicant_ethnicity_name: "Not Hispanic or Latino",
+        applicant_race_1: "5",
+        applicant_race_name_1: "White",
+        applicant_sex: "1",
+        hoepa_status: "2",
+        lien_status: "1",
+        population: "4000",
+        minority_population: "12.5",
+        state_name: "CA"
+    };
+    for (const [k, v] of Object.entries(sample)) {
+        const el = document.querySelector(`[name="${k}"]`);
+        if (el) el.value = v;
+    }
+});
+</script>
+{% endblock %}

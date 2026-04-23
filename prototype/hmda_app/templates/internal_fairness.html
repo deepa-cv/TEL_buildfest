@@ -1,0 +1,144 @@
+{% extends "base_hmda.html" %}
+{% macro render_metrics(m) -%}
+    {% if m.error %}
+    <p class="alert alert-error">{{ m.error }}</p>
+    {% else %}
+    <ul class="metric-stats">
+        <li>Rows: <strong>{{ m.n }}</strong> (labeled: {{ m.n_labeled }})</li>
+        <li>Demographic parity gap: <strong>{{ '%.4f'|format(m.demographic_parity_gap) }}</strong></li>
+        <li>Disparate impact ratio (min/max rate): <strong>{% if m.disparate_impact_ratio is not none %}{{ '%.4f'|format(m.disparate_impact_ratio) }}{% else %}—{% endif %}</strong></li>
+        <li>Equal opportunity (TPR gap): {% if m.equal_opportunity_tpr_gap is not none %}<strong>{{ '%.4f'|format(m.equal_opportunity_tpr_gap) }}</strong>{% else %}<em>needs labels</em>{% endif %}</li>
+        <li>Equalized odds: {% if m.equalized_odds %}TPR gap {{ '%.4f'|format(m.equalized_odds.tpr_gap) }}, FPR gap {{ '%.4f'|format(m.equalized_odds.fpr_gap) }}{% else %}<em>needs labels</em>{% endif %}</li>
+        <li>Predictive parity (PPV gap): {% if m.predictive_parity_ppv_gap is not none %}<strong>{{ '%.4f'|format(m.predictive_parity_ppv_gap) }}</strong>{% else %}<em>needs labels</em>{% endif %}</li>
+    </ul>
+    {% if m.selection_rates_by_group %}
+    <h4>Positive prediction rate by group</h4>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Group</th><th>Rate (Ŷ=1)</th></tr></thead>
+            <tbody>
+                {% for g, r in m.selection_rates_by_group.items() %}
+                <tr><td>{{ g }}</td><td>{{ '%.4f'|format(r) }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    {% endif %}
+{%- endmacro %}
+
+{% block title %}Group fairness lab{% endblock %}
+
+{% block content %}
+<div class="panel internal-panel">
+    <div class="internal-header">
+        <h1>Real-time group fairness (sliding window)</h1>
+        <a class="btn btn-secondary" href="{{ url_for('internal_dashboard') }}">← Dashboard</a>
+    </div>
+
+    <p class="lede">
+        Metrics use metadata derived from HMDA fields: <strong>US region</strong> (<code>state_name</code>),
+        <strong>sex</strong> (<code>applicant_sex</code>), <strong>race</strong> (<code>applicant_race_name_1</code>),
+        <strong>income bracket</strong> (<code>applicant_income_000s</code>),
+        <strong>tract minority</strong> (<code>minority_population</code>), and <strong>intersection</strong> (sex × race × income × region).
+        Equal opportunity / equalized odds / predictive parity need <code>actual_outcome</code> on API requests (0/1) or backfilled labels.
+    </p>
+
+    <section class="metric-library">
+        <h2>Metric library</h2>
+        <div class="card-grid">
+            {% for m in metric_descriptions %}
+            <div class="card metric-card">
+                <h3>{{ m.title }}</h3>
+                <p>{{ m.text }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <form method="get" class="fairness-form">
+        <div class="fields row-4">
+            <label>Window (hours, 0 = last N rows only)
+                <input type="number" name="hours" step="0.5" min="0" value="{{ window_hours }}">
+            </label>
+            <label>Max rows
+                <input type="number" name="limit" min="10" max="50000" value="{{ row_limit }}">
+            </label>
+            <label>Split by
+                <select name="attr">
+                    {% for val, label in attribute_options %}
+                    <option value="{{ val }}" {% if val == attr %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Model version A
+                <input type="text" name="mv1" value="{{ mv1 }}" placeholder="hmda-v1">
+            </label>
+            <label>Model version B (optional)
+                <input type="text" name="mv2" value="{{ mv2 }}" placeholder="hmda-v2">
+            </label>
+        </div>
+        <div class="actions">
+            <button type="submit" class="btn btn-primary">Apply window</button>
+        </div>
+    </form>
+
+    <p class="actions">
+        <a class="btn btn-secondary" href="{{ url_for('internal_fairness', hours=window_hours, limit=row_limit, attr=attr, mv1=mv1, mv2=mv2, check_alerts=1) }}">Evaluate + check thresholds</a>
+        <a class="btn btn-secondary" href="{{ url_for('internal_fairness', hours=window_hours, limit=row_limit, attr=attr, mv1=mv1, mv2=mv2, snapshot=1) }}">Save snapshot</a>
+    </p>
+    <p class="hint">Alerts when DP gap &gt; {{ dp_max }} or DI ratio &lt; {{ di_min }}. Slack: <code>FAIRNESS_SLACK_WEBHOOK</code>.</p>
+
+    <div class="compare-grid">
+        <div>
+            <h2>Model A: {{ mv1 }}</h2>
+            {{ render_metrics(metrics_a) }}
+        </div>
+        {% if metrics_b %}
+        <div>
+            <h2>Model B: {{ mv2 }}</h2>
+            {{ render_metrics(metrics_b) }}
+        </div>
+        {% endif %}
+    </div>
+
+    <h2>Recent alerts</h2>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Time</th><th>Severity</th><th>Metric</th><th>Message</th></tr></thead>
+            <tbody>
+                {% for a in recent_alerts %}
+                <tr>
+                    <td>{{ a.created_at }}</td>
+                    <td>{{ a.severity }}</td>
+                    <td>{{ a.metric_name }}</td>
+                    <td>{{ a.message }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4">No alerts yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h2>Saved snapshots</h2>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Time</th><th>Version</th><th>Hours</th><th>Limit</th><th>Split</th></tr></thead>
+            <tbody>
+                {% for s in snapshots %}
+                <tr>
+                    <td>{{ s.calc_time }}</td>
+                    <td>{{ s.model_version }}</td>
+                    <td>{{ s.window_hours }}</td>
+                    <td>{{ s.row_limit }}</td>
+                    <td>{{ s.split_attribute }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5">No snapshots yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

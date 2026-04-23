@@ -1,0 +1,40 @@
+{% extends "base_hmda.html" %}
+{% block title %}Application result{% endblock %}
+
+{% block content %}
+<div class="panel result-panel">
+    <h1>Application result</h1>
+    <p class="ref-id">Reference: <code>{{ request_id }}</code></p>
+
+    {% if ui_outcome == 'pending' %}
+    <div class="verdict verdict-pending">
+        <h2>Decision pending</h2>
+        <p>Automated fairness checks could not clear this application without further review. Our team will follow up. This often happens when the model outcome would change under a protected-attribute counterfactual test.</p>
+        <ul class="facts">
+            <li>Model suggestion (not final): <strong>{% if prediction == 1 %}would approve{% else %}would deny{% endif %}</strong></li>
+            <li>Fairness test (sex counterfactual): <strong>did not pass</strong></li>
+        </ul>
+    </div>
+    {% elif ui_outcome == 'approved' %}
+    <div class="verdict verdict-ok">
+        <h2>Loan approved</h2>
+        <p>Your application passed automated fairness checks and meets the model criteria for approval.</p>
+    </div>
+    {% else %}
+    <div class="verdict verdict-no">
+        <h2>Loan not approved</h2>
+        <p>Your application passed automated fairness checks, but does not meet the current approval criteria.</p>
+    </div>
+    {% endif %}
+
+    <div class="detail-card">
+        <h3>Checks</h3>
+        <ul>
+            <li>Fairness (applicant sex counterfactual stable): {% if fairness_passed %}yes{% else %}no{% endif %}</li>
+            <li>Counterfactual prediction: {{ counterfactual_prediction }}</li>
+        </ul>
+    </div>
+
+    <p><a class="btn btn-secondary" href="{{ url_for('customer_apply') }}">Submit another application</a></p>
+</div>
+{% endblock %}

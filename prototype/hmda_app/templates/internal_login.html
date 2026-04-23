@@ -1,0 +1,23 @@
+{% extends "base_hmda.html" %}
+{% block title %}Staff login{% endblock %}
+
+{% block content %}
+<div class="panel narrow">
+    <h1>Internal access</h1>
+    <p class="lede">Sign in to review logs, fairness tests, and Grafana.</p>
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="{{ url_for('internal_login') }}" class="stack-form">
+        <input type="hidden" name="next" value="{{ next_url }}">
+        <label>Username
+            <input type="text" name="username" autocomplete="username" required>
+        </label>
+        <label>Password
+            <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button type="submit" class="btn btn-primary">Sign in</button>
+    </form>
+    <p class="hint">Default credentials are set via <code>INTERNAL_USERNAME</code> and <code>INTERNAL_PASSWORD</code> in Docker.</p>
+</div>
+{% endblock %}

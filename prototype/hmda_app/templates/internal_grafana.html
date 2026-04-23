@@ -1,0 +1,15 @@
+{% extends "base_hmda.html" %}
+{% block title %}Grafana{% endblock %}
+
+{% block content %}
+<div class="panel internal-panel">
+    <div class="internal-header">
+        <h1>Grafana</h1>
+        <a class="btn btn-secondary" href="{{ url_for('internal_dashboard') }}">← Dashboard</a>
+    </div>
+    <p class="lede">Embedded view of your Grafana instance. If the frame is blank, open Grafana in a new tab and add the Postgres data source to <code>db:5432</code> on the Docker network.</p>
+    <div class="iframe-wrap">
+        <iframe src="{{ grafana_url }}" title="Grafana"></iframe>
+    </div>
+</div>
+{% endblock %}

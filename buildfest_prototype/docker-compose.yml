@@ -10,7 +10,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./app/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 3s
@@ -25,6 +25,18 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5050/health')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
 
   fairness_job:
     build: ./fairness_job
@@ -48,3 +60,16 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+  # Optional: docker compose --profile integration up api_smoke  (needs app/model.pkl)
+  api_smoke:
+    profiles: ["integration"]
+    image: python:3.10-slim
+    environment:
+      API_BASE: http://flask_api:5050
+    volumes:
+      - ./test_api.py:/test_api.py:ro
+    depends_on:
+      flask_api:
+        condition: service_healthy
+    command: ["python", "/test_api.py"]

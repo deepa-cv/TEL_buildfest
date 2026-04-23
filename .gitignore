@@ -1,7 +1,11 @@
 # Model files (too large for GitHub)
 *.pkl
+*.pickle
 app/model.pkl
 **/model.pkl
+
+# Jupyter (local analysis)
+prototype/fairlytics.ipynb
 
 # Python
 __pycache__/

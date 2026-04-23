@@ -1,0 +1,110 @@
+# HMDA prototype stack: Postgres (fairness DB), HMDA Flask API, fairness job, Grafana.
+# Ports avoid clashing with `buildfest_prototype` if both run locally: DB 5433, API 5051, Grafana 3001.
+#
+# Bring up:  docker compose up --build
+# Unit tests (no DB): docker compose run --rm unit_tests
+# API smoke (needs stack): docker compose --profile integration up --build api_smoke
+
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: fairness
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  hmda_api:
+    build:
+      context: .
+      dockerfile: hmda_app/Dockerfile
+    container_name: hmda_api
+    ports:
+      - "5051:5050"
+    environment:
+      DB_HOST: db
+      DB_NAME: fairness
+      DB_USER: postgres
+      DB_PASS: postgres
+      MODEL_PATH: /app/model_hmda.pkl
+      FLASK_SECRET_KEY: ${FLASK_SECRET_KEY:-dev-docker-hmda-secret}
+      INTERNAL_USERNAME: ${INTERNAL_USERNAME:-admin}
+      INTERNAL_PASSWORD: ${INTERNAL_PASSWORD:-changeme}
+      GRAFANA_PUBLIC_URL: ${GRAFANA_PUBLIC_URL:-http://localhost:3001}
+      MODEL_VERSION: ${MODEL_VERSION:-hmda-v1}
+      FAIRNESS_DP_GAP_MAX: ${FAIRNESS_DP_GAP_MAX:-0.15}
+      FAIRNESS_DI_MIN: ${FAIRNESS_DI_MIN:-0.80}
+      FAIRNESS_SLACK_WEBHOOK: ${FAIRNESS_SLACK_WEBHOOK:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5050/health')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+
+  fairness_job:
+    build: ./fairness_job
+    container_name: fairness_job_hmda
+    environment:
+      DB_HOST: db
+      DB_NAME: fairness
+      DB_USER: postgres
+      DB_PASS: postgres
+    depends_on:
+      db:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana_hmda
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    depends_on:
+      db:
+        condition: service_healthy
+
+  unit_tests:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: Dockerfile.unit_tests
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    command: ["pytest", "tests/", "-v"]
+
+  api_smoke:
+    profiles: ["integration"]
+    image: python:3.10-slim
+    environment:
+      API_BASE: http://hmda_api:5050
+    volumes:
+      - ./test_api_hmda.py:/test_api_hmda.py:ro
+    depends_on:
+      hmda_api:
+        condition: service_healthy
+    command: ["python", "/test_api_hmda.py"]
